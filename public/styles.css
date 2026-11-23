@@ -83,3 +83,5 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
   .layout { grid-template-columns: 1fr; }
   .topbar-note { display: none; }
 }
+
+thead th span.u{text-transform:none;}
