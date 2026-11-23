@@ -1,0 +1,8 @@
+[project]
+name = "pavelab-fwd"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = ["numpy", "scipy"]
+
+[tool.vercel]
+entrypoint = "api.backcalc:handler"
