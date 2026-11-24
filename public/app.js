@@ -19,6 +19,7 @@ function layerRow(L = {}) {
     <label>E seed (MPa)<input type="number" step="any" class="l-seed" value="${L.seed ?? ""}"></label>
     <label>E min<input type="number" step="any" class="l-min" value="${L.min ?? ""}"></label>
     <label>E max<input type="number" step="any" class="l-max" value="${L.max ?? ""}"></label>
+    <label class="l-fixlbl">Fix E<input type="checkbox" class="l-fix"${L.fix ? " checked" : ""}></label>
     <button class="btn-icon" title="Remove layer">×</button>`;
   div.querySelector(".btn-icon").onclick = () => {
     if (document.querySelectorAll("#layers .row.layers").length > 2) div.remove();
@@ -42,15 +43,17 @@ function loadExample() {
 function collect() {
   const sensors = [...document.querySelectorAll("#sensors .s-off")].map((e) => +e.value);
   const deflections = [...document.querySelectorAll("#sensors .s-def")].map((e) => +e.value);
-  const layers = [...document.querySelectorAll("#layers .row.layers")].map((r) => ({
+  const rows = [...document.querySelectorAll("#layers .row.layers")];
+  const layers = rows.map((r) => ({
     thickness_mm: r.querySelector(".l-th").value === "" ? null : +r.querySelector(".l-th").value,
     poisson: +r.querySelector(".l-nu").value,
     E_seed_MPa: r.querySelector(".l-seed").value === "" ? null : +r.querySelector(".l-seed").value,
     E_min_MPa: +r.querySelector(".l-min").value,
     E_max_MPa: +r.querySelector(".l-max").value,
   }));
+  const fix = rows.map((r, i) => (r.querySelector(".l-fix").checked ? i : -1)).filter((i) => i >= 0);
   return { load_kN: +$("load").value, plate_radius_mm: +$("plate").value,
-           sensors_mm: sensors, deflections_um: deflections, layers, n_starts: 3 };
+           sensors_mm: sensors, deflections_um: deflections, layers, fix, n_starts: 3 };
 }
 
 function drawChart(meas, calc, sensors) {
@@ -97,9 +100,26 @@ async function run() {
     badge.textContent = `RMS ${data.rms_percent}%`;
     if (data.rms_percent > 3) badge.classList.add("warn");
     const names = ["Layer 1", "Layer 2", "Layer 3", "Layer 4", "Layer 5"];
-    $("moduli-cards").innerHTML = data.E_MPa.map((e, i) =>
-      `<div class="card"><div class="k">${names[i] || "Layer " + (i + 1)}</div>
-       <div class="v">${Math.round(e).toLocaleString()} <span class="u">MPa</span></div></div>`).join("");
+    const fmt = (v) => Math.round(v).toLocaleString();
+    $("moduli-cards").innerHTML = data.E_MPa.map((e, i) => {
+      const hit = data.at_bound && data.at_bound[i];
+      const fixed = data.fixed && data.fixed[i];
+      const lin = (data.layers_in && data.layers_in[i]) || {};
+      const hTxt = lin.thickness_mm == null ? "∞" : fmt(lin.thickness_mm) + " mm";
+      return `<div class="card${hit ? " atbound" : ""}">
+       <div class="k">${names[i] || "Layer " + (i + 1)}</div>
+       <div class="v">${fmt(e)} <span class="u">MPa</span></div>
+       <div class="range">range ${fmt(data.E_min_MPa[i])}–${fmt(data.E_max_MPa[i])} MPa · h ${hTxt} · ν ${lin.poisson ?? ""}${fixed ? " · fixed at seed" : ""}</div>
+       ${hit ? `<div class="flag">At ${hit} bound — needs engineering review</div>` : ""}
+      </div>`;
+    }).join("");
+    const banner = $("review-banner");
+    if (data.review_required) {
+      banner.textContent = "One or more layer moduli sit at their E min / E max bound — the optimum wanted to go beyond it. Treat flagged values as limits, not measurements, and review them with lab data, tighter bounds, or Fix E before use.";
+      banner.classList.remove("hidden");
+    } else {
+      banner.classList.add("hidden");
+    }
     const tb = document.querySelector("#fit-table tbody");
     tb.innerHTML = data.meas_defl_um.map((m, i) =>
       `<tr><td>${collect().sensors_mm[i]}</td><td>${m}</td><td>${data.calc_defl_um[i]}</td>

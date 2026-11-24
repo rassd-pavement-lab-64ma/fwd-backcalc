@@ -48,6 +48,11 @@ class handler(BaseHTTPRequestHandler):
                 fix=cfg.get("fix"), n_starts=int(cfg.get("n_starts", 3)))
             res["E_MPa"] = [float(x) for x in res["E_MPa"]]
             res["load_kPa"] = round(float(q_kPa), 1)
+            res["layers_in"] = [
+                {"thickness_mm": (float(L["thickness_mm"])
+                                  if L.get("thickness_mm") not in (None, "") else None),
+                 "poisson": float(L["poisson"])}
+                for L in layers]
             self._send(200, res)
         except Exception as exc:  # noqa: BLE001
             self._send(400, {"error": str(exc)})

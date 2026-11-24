@@ -267,8 +267,30 @@ def backcalculate(defl_um, sensors_mm, h_mm, poisson, E_seed, E_min, E_max,
         E_out[i] = 10.0 ** sol.x[j]
     calc = calc_defl(sol.x)
     rms_pct = 100.0 * np.sqrt(np.mean(((calc - defl_um) / defl_um) ** 2))
+
+    # Engineering-review flag: a free layer whose optimum lands within
+    # AT_BOUND_RTOL of its E_min/E_max bound wanted to pass the bound, so the
+    # reported value is a limit, not a measurement.
+    AT_BOUND_RTOL = 0.02
+    fixed_flags = [i in fix for i in range(n)]
+    at_bound = []
+    for i in range(n):
+        hit = None
+        if not fixed_flags[i]:
+            if E_out[i] <= E_min[i] * (1.0 + AT_BOUND_RTOL):
+                hit = "lower"
+            elif E_out[i] >= E_max[i] * (1.0 - AT_BOUND_RTOL):
+                hit = "upper"
+        at_bound.append(hit)
+
     return {
         "E_MPa": list(np.round(E_out, 1)),
+        "E_min_MPa": list(np.round(E_min, 1)),
+        "E_max_MPa": list(np.round(E_max, 1)),
+        "E_seed_MPa": list(np.round(E_seed, 1)),
+        "fixed": fixed_flags,
+        "at_bound": at_bound,
+        "review_required": any(at_bound),
         "rms_percent": round(float(rms_pct), 3),
         "calc_defl_um": list(np.round(calc, 2)),
         "meas_defl_um": list(defl_um),

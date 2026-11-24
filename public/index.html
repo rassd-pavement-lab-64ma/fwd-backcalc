@@ -46,6 +46,7 @@
 
   <section class="panel" id="output-panel">
     <div class="panel-head"><h2>Results</h2><span id="rms-badge" class="badge hidden"></span></div>
+    <div id="review-banner" class="review-banner hidden"></div>
     <div id="moduli-cards" class="cards"></div>
     <div class="chart-wrap"><canvas id="chart" height="220"></canvas></div>
     <table id="fit-table" class="table hidden">
@@ -53,16 +54,27 @@
       <tbody></tbody>
     </table>
     <details class="method">
-      <summary>Methodology &amp; validation</summary>
+      <summary>Methodology, validation scope &amp; data handling</summary>
       <p>Forward model: exact Burmister/Schiffman multilayer elastic solution (the theory
       class used by WESLEA/EVERCALC), verified against the closed-form Boussinesq
-      half-space solution (&lt;0.02% error).</p>
-      <p>Backcalculation: bounded least-squares minimization of relative deflection
-      error (EVERCALC objective) in log-modulus space with multi-start.</p>
-      <p>Validated against the FHWA-HRT-16-011 Chapter 3 field example (WSDOT SR-395
-      basins): backcalculated moduli match EVERCALC within ~10% on 3 of 4 sections
-      with equal or better basin fit (RMS); the 4th is a thin-HMA case with the known
-      modulus trade-off flagged by FHWA guidance.</p>
+      half-space solution (&lt;0.02% error). Backcalculation: bounded least-squares
+      minimization of relative deflection error (EVERCALC's objective) in log-modulus
+      space with multi-start.</p>
+      <p><strong>Validated scope.</strong> Validation covers exactly four WSDOT SR-395
+      deflection basins from FHWA-HRT-16-011 Chapter 3 (MP207.85, MP208.00, MP208.50,
+      MP209.00), compared against the EVERCALC results published in that chapter only.
+      On three of the four sections the backcalculated moduli match EVERCALC within
+      ~10% with equal or better basin RMS; the fourth (MP208.50, 119 mm HMA) is a
+      thin-HMA case whose best fit sits at the HMA upper bound. No comparison against
+      BAKFAA or any other program has been performed, and accuracy outside these four
+      basins is not claimed.</p>
+      <p><strong>Results at a bound.</strong> A modulus that lands on its E min / E max
+      bound is flagged as needing engineering review: the optimum wanted to go beyond
+      the bound, so treat the value as a limit, not a measurement. Use lab- or
+      temperature-adjusted seeds, tighter bounds, or the Fix E option on that layer.</p>
+      <p><strong>Data handling.</strong> The deflections and layer inputs you enter are
+      sent to this site's server endpoint (<code>/api/backcalc</code>) for computation.
+      The app does not store your inputs.</p>
     </details>
   </section>
 </main>
